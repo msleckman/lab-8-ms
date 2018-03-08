@@ -1,0 +1,43 @@
+---
+title: "ESM 244 - Lab 8"
+author: "Margaux Sleckman"
+date: "March 8, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+###Load the packages
+```{r}
+
+library(tidyverse)
+library(sf)
+library(spatstat)
+library(leaflet)
+library(maptools)
+library(sp)
+library(tmap)
+
+```
+
+###Colomn graph of Texas Oil Spills 
+```{r}
+
+oil_spills <-read_csv("oil_spills.csv")
+
+df<- oil_spills %>% 
+  filter(`Accident State`=="TX" & `Accident Year`<2017) %>% 
+  group_by(`Accident Year`) %>% 
+  summarise(Loss = sum(`Net Loss (Barrels)`))
+
+colnames(df) <-c("Year","Loss")
+
+ggplot(df, aes(x=Year, y=Loss))+
+  geom_col()
+         
+
+```
+
