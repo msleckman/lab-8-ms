@@ -57,3 +57,94 @@ leaflet(oil_sf) %>%
   addMarkers()
 ```
 
+
+
+## tmap plot with the texas state shapefile
+```{r }
+
+states <-st_read(dsn=".", layer="states")
+
+tex_border <-states %>% 
+  filter(STATE_NAME == "Texas") %>% 
+  st_transform(4326)
+
+plot(tex_border)
+
+tm_shape(tex_border)+
+  tm_polygons()+
+  tm_shape(oil_sf)+
+  tm_dots(size=0.3)
+
+```
+
+We want to know. does this point pattern shown 
+
+###Convert Daa to spatial Points Pattern
+(combination of point data and the bounding window)
+
+```{r}
+
+spill_sp<-as(oil_sf, "Spatial")
+spill_ppp<-as(spill_sp, "ppp")
+
+#Want to create new spatial dataframe 
+# ppp stands fr point pattern
+
+tx_sp<-as(tex_border,"Spatial") 
+tx_owin<-as(tx_sp, "owin")
+
+all_ppp<-ppp(spill_ppp$x, spill_ppp$y, window = tx_owin)  
+
+```
+
+###A density plot 
+```{r plot_bubbles}
+
+plot(density(all_ppp, sigma = 0.1))
+
+```
+
+```{r }
+
+oil_qt<-quadrat.test(all_ppp, nx=5,ny=5)
+oil_qt
+# The p value (significant) tells us that the data are not distributed, 
+# NULL: data are csr 
+# Would reject NULL hypothesis that the data are csr.
+
+plot(all_ppp)
+plot(oil_qt, add=TRUE, cex=0.4)
+```
+Looking at data, the observations do not look csr. 
+
+**note the 14.5 in each quadrats**
+PPP automatically 
+
+###G-FUncion for Nearest Neighbor Analysis 
+```{r}
+
+r<- seq(0,1, by = 0.01)
+oil_gfun <- envelope(all_ppp, fun=Gest, r=r, nsim=100)
+
+ggplot(oil_gfun, aes(x=r, y=obs))+
+  geom_line(color="black")+
+  geom_line(aes(x=r, y=theo), color="red")
+
+```
+
+R has has a shirter proportion of point paired tend tohave nearestneighbor closer than we expect if it 
+theo: modelled value for CSR. Comes from envelope. 
+
+###Nearest neighbor using the L-function (ripley's K, standardized)
+```{r}
+
+r2<- seq(0,3, by=0.5)
+
+oil_lfun<- envelope(all_ppp, fun = Lest, r=r2, nsim=20, global = TRUE)
+
+ggplot(oil_lfun, aes(x=r2, y=obs))+
+  geom_line(color="black")+
+  geom_line(aes(x=r2, y=theo),color="blue")
+
+
+```
